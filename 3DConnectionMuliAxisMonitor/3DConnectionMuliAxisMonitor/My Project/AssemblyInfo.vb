@@ -11,11 +11,11 @@ Imports System.Windows
 
 ' Review the values of the assembly attributes
 
-<Assembly: AssemblyTitle("_3DConnectionMuliAxisMonitor")>
-<Assembly: AssemblyDescription("")>
-<Assembly: AssemblyCompany("Hewlett-Packard Company")>
-<Assembly: AssemblyProduct("_3DConnectionMuliAxisMonitor")>
-<Assembly: AssemblyCopyright("Copyright © Hewlett-Packard Company 2015")>
+<Assembly: AssemblyTitle("3D Connection Muli Axis Monitor")>
+<Assembly: AssemblyDescription("Monitors rotation settings")>
+<Assembly: AssemblyCompany("Robot")>
+<Assembly: AssemblyProduct("3D Connection Muli Axis Monitor")>
+<Assembly: AssemblyCopyright("Flower Robot")>
 <Assembly: AssemblyTrademark("")>
 <Assembly: ComVisible(false)>
 
