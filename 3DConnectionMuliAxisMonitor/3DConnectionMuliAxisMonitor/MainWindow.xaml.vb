@@ -1,4 +1,5 @@
 ﻿Imports System.IO
+Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Windows.Forms
 Imports System.Windows.Interop
@@ -15,6 +16,7 @@ Class MainWindow
     Dim Main As Process
     Dim ptr As IntPtr
     Dim hhook As IntPtr
+    Dim TaskBarIcon As NotifyIcon
     Public Property MulitAxisIsOff As Boolean
         Get
             SyncLock PropLock
@@ -24,6 +26,12 @@ Class MainWindow
         Set(value As Boolean)
             SyncLock PropLock
                 _MulitAxisIsOff = value
+                If value Then
+                    MainImage.Visibility = Visibility.Visible
+                Else
+                    MainImage.Visibility = Visibility.Collapsed
+                End If
+
 
             End SyncLock
         End Set
@@ -36,6 +44,24 @@ Class MainWindow
         InitializeComponent()
 
         Me.DataContext = Me
+
+        ' Me.TaskbarItemInfo.Overlay = CType(Resources("OkImage"), ImageSource)
+
+
+        TaskBarIcon = New NotifyIcon()
+        TaskBarIcon.Visible = True
+
+        Dim MenuItem As New MenuItem("Close")
+        AddHandler MenuItem.Click, AddressOf MenuItem_Close_Click
+
+        Dim MenuItem2 As New MenuItem("Refresh Postion")
+        AddHandler MenuItem2.Click, AddressOf MenuItem_Refresh_Click
+
+        TaskBarIcon.Text = "3D Connection Multi axis monitor"
+        TaskBarIcon.Icon = My.Resources.rotation_circle_full_rotate_arrow
+        TaskBarIcon.ContextMenu = New ContextMenu({MenuItem, MenuItem2})
+        AddHandler TaskBarIcon.MouseClick, AddressOf TaskBarClick
+
         'Read 3D connection config file 
         cfg.ReadFile()
 
@@ -56,15 +82,21 @@ Class MainWindow
         Timer.Start()
     End Sub
 
+    Private Sub TaskBarClick(sender As Object, e As MouseEventArgs)
+        'TaskBarIcon.ContextMenu.Show(TaskBarIcon.conn, e.Location)
+        Dim mi As MethodInfo = GetType(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance Or BindingFlags.NonPublic)
+        mi.Invoke(TaskBarIcon, Nothing)
+    End Sub
 
     Private Sub MainForm_Deactivated(sender As Object, e As EventArgs)
         Me.Topmost = True
     End Sub
-    Private Sub MenuItem_Close_Click(sender As Object, e As RoutedEventArgs)
+
+    Private Sub MenuItem_Close_Click(sender As Object, e As Object)
         My.Settings.Save()
         Me.Close()
     End Sub
-    Private Sub MenuItem_Refresh_Click(sender As Object, e As RoutedEventArgs)
+    Private Sub MenuItem_Refresh_Click(sender As Object, e As Object)
         Main = Nothing
     End Sub
     Private Sub CheckConfig(sender As Object, e As FileSystemEventArgs)
@@ -79,6 +111,8 @@ Class MainWindow
     Private Sub HostResized(rect As Rect)
         Me.Dispatcher.Invoke(
              New Action(Sub()
+                            Me.Topmost = True
+
                             Dim Rec As System.Windows.Rect = System.Windows.SystemParameters.WorkArea
                             Dim Right, Bottom As Integer
                             If Rec.BottomRight.X > rect.Right Then
@@ -122,6 +156,9 @@ Class MainWindow
 
 
             GetWindowRect(ptr, NotepadRect)
+            If NotepadRect.Bottom = 0 AndAlso NotepadRect.Right = 0 Then
+                Main = Nothing
+            End If
             HostResized(NotepadRect)
             'Me.Dispatcher.Invoke(
             '    New Action(Sub()
@@ -185,6 +222,8 @@ Class MainWindow
         '  Console.WriteLine("Text of hwnd changed {0:x8}", hwnd.ToInt32())
 
     End Sub
+
+
 #End Region
 
 End Class

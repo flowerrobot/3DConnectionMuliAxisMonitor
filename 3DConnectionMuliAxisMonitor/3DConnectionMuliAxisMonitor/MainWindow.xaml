@@ -5,15 +5,39 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:_3DConnectionMuliAxisMonitor"
         mc:Ignorable="d"
-        Title="MainWindow" 
+        Title="Multi Axis Monitor" 
         Width="75" Height="75" 
         WindowStyle="None"          
         Topmost="True"
          ResizeMode="NoResize" AllowsTransparency="True" 
-        x:Name="MainForm"  ShowInTaskbar="False" Icon="rotation-circle-full-rotate-arrow.ico" Deactivated="MainForm_Deactivated"
+        x:Name="MainForm" Icon="rotation-circle-full-rotate-arrow.ico" Deactivated="MainForm_Deactivated" ShowInTaskbar="False"
        >
+    <!--<Window.TaskbarItemInfo>
+        <TaskbarItemInfo/>
+    </Window.TaskbarItemInfo>-->  
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <!-- Each image has to be declared inside
+             a DrawingImage resource. An identifier
+             must be provided via x:Key-->
+        <DrawingImage x:Key="WarningImage">
+            <!-- The required image is declared 
+                 inside the DrawingImage.Drawing 
+                 property definition -->
+            <DrawingImage.Drawing>
+                <!-- The actual image is specified via an ImageDrawing
+                     element. Particularly the ImageSource property
+                     points to the image path whereas Rect
+                     specifies the image size-->
+                <ImageDrawing Rect="0,0,16,16" ImageSource="Image/rotation-circle-full-rotate-arrow-512_Strike.png"/>
+            </DrawingImage.Drawing>
+        </DrawingImage>
+
+        <DrawingImage x:Key="OkImage">
+            <DrawingImage.Drawing>
+                <ImageDrawing Rect="0,0,16,16" ImageSource="Image/rotation-circle-full-rotate-arrow-512_Strike.png" />
+            </DrawingImage.Drawing>
+        </DrawingImage>
     </Window.Resources>
     <Window.ContextMenu>
         <ContextMenu>
@@ -38,7 +62,7 @@
     </Window.Style>
     <StackPanel>
         <!--https://www.iconfinder.com/icons/147813/3d_rotate_arrow_ccw_forward_left_rotate_rotate_3d_rotation_icon-->
-        <Image Source="Image/rotation-circle-full-rotate-arrow-512_Strike.png" Visibility="{Binding MulitAxisIsOff, Converter={StaticResource  BooleanToVisibilityConverter}}" />
+        <Image x:Name="MainImage" Source="Image/rotation-circle-full-rotate-arrow-512_Strike.png" Visibility="{Binding MulitAxisIsOff, Converter={StaticResource  BooleanToVisibilityConverter}}" />
       
     </StackPanel>
 </Window>
