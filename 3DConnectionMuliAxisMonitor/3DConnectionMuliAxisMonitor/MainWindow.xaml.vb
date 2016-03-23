@@ -4,6 +4,8 @@ Imports System.Runtime.InteropServices
 Imports System.Windows.Forms
 Imports System.Windows.Interop
 Imports PropertyChanged
+Imports SolidWorks.Interop.sldworks
+Imports SolidWorks.Interop.swconst
 
 <ImplementPropertyChanged>
 Class MainWindow
@@ -17,6 +19,9 @@ Class MainWindow
     Dim ptr As IntPtr
     Dim hhook As IntPtr
     Dim TaskBarIcon As NotifyIcon
+
+    Dim sld As SldWorks = Nothing
+
     Public Property MulitAxisIsOff As Boolean
         Get
             SyncLock PropLock
@@ -111,66 +116,139 @@ Class MainWindow
     Private Sub HostResized(rect As Rect)
         Me.Dispatcher.Invoke(
              New Action(Sub()
-                            Me.Topmost = True
+                            Me.Topmost = False
 
-                            Dim Rec As System.Windows.Rect = System.Windows.SystemParameters.WorkArea
+
+
                             Dim Right, Bottom As Integer
-                            If Rec.BottomRight.X > rect.Right Then
-                                Right = Rec.Right
-                            Else
-                                Right = Rec.BottomRight.X
-                            End If
+                            Right = rect.Right
+                            Bottom = rect.Bottom
 
-                            If Rec.BottomRight.Y > rect.Bottom Then
-                                Bottom = Rec.Bottom
-                            Else
-                                Bottom = Rec.BottomRight.Y
-                            End If
+                            'Dim Rec As System.Windows.Rect = System.Windows.SystemParameters.WorkArea
+                            'not used, always keep it relative
+                            'If Rec.BottomRight.X > rect.Right Then
+                            '    Right = rect.Right
+                            'Else
+                            '    Right = Rec.BottomRight.X
+                            'End If
+
+                            'If Rec.BottomRight.Y > rect.Bottom Then
+                            '    Bottom = rect.Bottom
+                            'Else
+                            '    Bottom = Rec.BottomRight.Y
+                            'End If
+
 
 
                             Me.Left = (Right - 50 - Me.Width)
                             Me.Top = (Bottom - 50 - Me.Height)
+                            Me.Topmost = True
                         End Sub))
     End Sub
-    Private Sub FindProccess()
+    Private Function FindProccess() As Process
         Dim processes As Process() = Process.GetProcessesByName("SLDWORKS")
         If processes.Count > 1 Then
+#If DEBUG Then
             Stop
+#End If
+
         End If
         If processes.Count <> 0 Then
-            Main = processes(0)
+            Main = processes.FirstOrDefault
             ptr = Main.MainWindowHandle
-
-            'Dim NotepadRect As New Rect
-            'GetWindowRect(ptr, NotepadRect)
-            'HostResized(NotepadRect)
+            Return processes.FirstOrDefault
         End If
+        Return Nothing
+    End Function
+    Public Sub GetSolidworks()
+        sld = GetObject(, "SldWorks.Application")
+        AddHandler sld.DestroyNotify, AddressOf SLDClosingEvent
     End Sub
+    Private Function SldMethod(ByRef State As swWindowState_e) As Rect
+        Try
+            If (sld Is Nothing) Then Return Nothing
+
+            Dim rets As New Rect
+            rets.Left = sld.FrameLeft
+            rets.Top = sld.FrameTop
+            rets.Bottom = sld.FrameTop + sld.FrameHeight
+            rets.Right = sld.FrameLeft + sld.FrameWidth
+
+            State = sld.FrameState
+
+            Return rets
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    Private Function SLDClosingEvent() As Integer
+        RemoveHandler sld.DestroyNotify, AddressOf SLDClosingEvent
+        sld = Nothing
+    End Function
+
     Private Sub Ticker(sender As Object, e As EventArgs)
         Try
-            Dim NotepadRect As New Rect
-            If Main Is Nothing OrElse Main.HasExited OrElse ptr.ToInt32 = 0 Then
-                FindProccess()
+            Me.Topmost = True
+
+            If (sld Is Nothing) Then GetSolidworks()
+
+            Dim State As swWindowState_e
+            Dim Window As Rect = SldMethod(State)
+
+            If Window.Equals(Nothing) OrElse State = swWindowState_e.swWindowMinimized Then
+                If (Me.Visibility = Visibility.Visible) Then
+                    Me.Dispatcher.Invoke(New Action(Sub()
+                                                        Me.Visibility = Visibility.Collapsed
+                                                    End Sub))
+                End If
+            Else
+                If Me.Visibility = Visibility.Collapsed Then
+                    Me.Dispatcher.Invoke(New Action(Sub()
+                                                        Me.Visibility = Visibility.Visible
+                                                    End Sub))
+
+                End If
+                HostResized(Window)
             End If
 
 
+            ''Dim NotepadRect As New Rect
+            '''If Main Is Nothing OrElse Main.HasExited OrElse ptr.ToInt32 = 0 Then
+            ''FindProccess()
+            ''If GetWindowRect(ptr, NotepadRect) Then
+            ''    If NotepadRect.Bottom = 0 AndAlso NotepadRect.Right = 0 Then
+            ''        Main = Nothing
+            ''    End If
 
-            GetWindowRect(ptr, NotepadRect)
-            If NotepadRect.Bottom = 0 AndAlso NotepadRect.Right = 0 Then
-                Main = Nothing
-            End If
-            HostResized(NotepadRect)
-            'Me.Dispatcher.Invoke(
-            '    New Action(Sub()
-            '                   'cfg.ReadFile()
-            '                   Try
+            ''    If (NotepadRect.Top < -30000 OrElse NotepadRect.Left < -30000) Then
+            ''        If (Me.Visibility = Visibility.Visible) Then
+            ''            Me.Dispatcher.Invoke(New Action(Sub()
+            ''                                                Me.Visibility = Visibility.Collapsed
+            ''                                            End Sub))
+            ''        End If
+            ''    ElseIf Me.Visibility = Visibility.Collapsed Then
+            ''        Me.Dispatcher.Invoke(New Action(Sub()
+            ''                                            Me.Visibility = Visibility.Visible
+            ''                                        End Sub))
+            ''    End If
+            ''    HostResized(NotepadRect)
+            ''    'Me.Dispatcher.Invoke(
+            ''    '    New Action(Sub()
+            ''    '                   'cfg.ReadFile()
+            ''    '                   Try
 
-            '                       Me.Left = (NotepadRect.Right - 50 - Me.Width)
-            '                       Me.Top = (NotepadRect.Bottom - 50 - Me.Height)
+            ''    '                       Me.Left = (NotepadRect.Right - 50 - Me.Width)
+            ''    '                       Me.Top = (NotepadRect.Bottom - 50 - Me.Height)
 
-            '                   Catch
-            '                   End Try
-            '               End Sub))
+            ''    '                   Catch
+            ''    '                   End Try
+            ''    '               End Sub))
+            ''Else
+            ''    Me.Dispatcher.Invoke(New Action(Sub()
+            ''                                        Me.Visibility = Visibility.Collapsed
+            ''                                    End Sub))
+            ''End If
         Catch
             Main = Nothing
         End Try
